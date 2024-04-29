@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Component
@@ -39,6 +40,7 @@ public class RedisServiceElasticImpli extends BaseRedisServiceImpli implements R
             if (json == null) {
                 String jsonString = redisObjectMapper.writeValueAsString(product);
                 this.hashSet(keyProduct, field, jsonString);
+                this.setTimeToLive(keyProduct, 10, TimeUnit.MINUTES);
             }
         } catch (JsonProcessingException e) {
             e.getLocation();
@@ -80,6 +82,7 @@ public class RedisServiceElasticImpli extends BaseRedisServiceImpli implements R
         for (Product product : productList) {
             addProductToRedis(product);
         }
+        this.setTimeToLive(productList.get(0).getTitle(), 10, TimeUnit.MINUTES);
     }
 
     // lấy ra sản phẩm với title tương ứng

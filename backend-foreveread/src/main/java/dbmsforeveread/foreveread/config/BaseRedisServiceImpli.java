@@ -33,8 +33,8 @@ public class BaseRedisServiceImpli implements BaseRedisService {
     }
 
     @Override
-    public void setTimeToLive(String key, long timeOutInDays) {
-        redisTemplate.expire(key, timeOutInDays, TimeUnit.DAYS);
+    public void setTimeToLive(String key, long timeOutInDays, TimeUnit timeUnit) {
+        redisTemplate.expire(key, timeOutInDays, timeUnit);
     }
 
     @Override

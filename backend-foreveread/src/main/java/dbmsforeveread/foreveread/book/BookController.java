@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,11 +35,17 @@ public class BookController {
     @Autowired
     private BookRedisService bookRedisServiceImpli;
 
+    public static final long DEFAULT_TTL = 5 * 60;
+
     @GetMapping("/{id}")
     public ResponseEntity<BookDTO> getBookDetails(@PathVariable Long id) {
         BookDTO book = bookRedisServiceImpli.getBookFromRedis(id.toString());
         if (book == null) {
-            book = bookService.getBookDetails(id);
+            book = (bookService.getBookDetails(id) != null)
+                        ? bookService.getBookDetails(id)
+                        : new BookDTO();
+            // trả về 1 bookDTO trống set thời gian sốsosongs luôn giải quyết được cái Cache Aside
+            bookRedisServiceImpli.setTTLForKey(id.toString(), DEFAULT_TTL, TimeUnit.SECONDS);
             bookRedisServiceImpli.addBookToRedis(book);
         }
         return ResponseEntity.ok(book);

@@ -3,6 +3,7 @@ package dbmsforeveread.foreveread.config;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public interface BaseRedisService {
 
@@ -10,7 +11,7 @@ public interface BaseRedisService {
     void set(String key, String value);
 
     // set thời gian trong bộ nhớ cache của 1 cặp key-value
-    void setTimeToLive(String key, long timeOutInDays);
+    void setTimeToLive(String key, long timeOutInDays, TimeUnit timeUnit);
 
     // lưu
     void hashSet(String key, String field, Object value);
