@@ -35,4 +35,8 @@ public class BookDTO {
     private List<Long> authorIds;
     private Set<CategoryDTO> category;
     private InventoryDTO inventory;
+    private Integer quantity;
+    private List<Long> categoryIds;
+    private Long publisherId;
+
 }

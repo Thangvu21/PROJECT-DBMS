@@ -11,23 +11,58 @@ spring:
       host: localhost
       port: 6379
       use-redis-cache: true
+      # connection pool
+      jedis:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+          max-wait: 30000
     mongodb:
       uri: mongodb://localhost:27017/foreveread
+      # connection pool
+      connection-pool:
+        initial-size: 10
+        max-size: 20
+        min-size: 5
+        max-wait-time: 5000
+        max-connection-idle-time: 60000
     elasticsearch:
       repositories:
         enabled: true
+      rest:
+        uris: https://localhost:9200
+        #connection pool
+        client:
+          node-sampler-interval: 5s
+          max-connections: 20
+          max-connections-per-route: 10
   datasource:
     url: jdbc:mysql://localhost:3306/better_read
     username: root
     password: 123456
-  #    password: 123456
+    # connection pool
+    hikari:
+      pool-name: MySQLHikariCP
+      maximum-pool-size: 20     #Số lượng tối đa các connection trong pool.
+      minimum-idle: 10          #Số lượng tối thiểu các connection không hoạt động được giữ trong pool.
+      connection-timeout: 30000 #Thời gian tối đa chờ một connection được phép từ pool.
+      idle-timeout: 600000      #Thời gian một connection được giữ ở trạng thái không hoạt động trước khi được đóng.
+      max-lifetime: 1800000     #Thời gian tối đa mà một connection được phép tồn tại trong pool.
   jpa:
     hibernate: ddl-auto=update
   neo4j:
-    uri: bolt://localhost:7687  # ${env.AURA_URI}
+    uri: ${env.AURA_URI}
     authentication:
-      username: better_read
-      password: 12345678 # ${env.AURA_PASSWORD}
+      username: ${env.AURA_USER}
+      password: ${env.AURA_PASSWORD}
+      #connection pool
+      driver:
+        connection-pool:
+          max-connection-pool-size: 20
+          acquisition-timeout: 60000
+          idle-timeout: 5000
+          max-life-time: 1800000
   jackson:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
@@ -38,3 +73,18 @@ logging:
     org:
       springframework:
         web: DEBUG
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: better_read
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer:org.apache.kafka.common.serialization.StringSerializer
+      value-serializer:org.apache.kafka.common.serialization.StringSerializer
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true

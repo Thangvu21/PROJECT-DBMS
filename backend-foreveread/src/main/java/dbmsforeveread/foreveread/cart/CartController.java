@@ -74,7 +74,7 @@ public class CartController {
 
     @PostMapping("/checkout")
     public ResponseEntity<Order> checkout(@RequestParam Long userId) {
-        Order order = orderService.checkout(userId);
+        Order order = cartService.checkout(userId);
         return ResponseEntity.ok(order);
     }
 }

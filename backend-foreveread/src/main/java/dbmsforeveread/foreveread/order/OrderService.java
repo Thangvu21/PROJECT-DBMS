@@ -1,15 +1,21 @@
 package dbmsforeveread.foreveread.order;
 
+import dbmsforeveread.foreveread.book.Book;
+import dbmsforeveread.foreveread.book.BookService;
 import dbmsforeveread.foreveread.cart.Cart;
 import dbmsforeveread.foreveread.cart.CartService;
+import dbmsforeveread.foreveread.cartItem.CartItem;
 import dbmsforeveread.foreveread.orderItem.OrderItem;
 import dbmsforeveread.foreveread.user.User;
 import dbmsforeveread.foreveread.user.UserProfile;
+import dbmsforeveread.foreveread.user.UserRepository;
 import dbmsforeveread.foreveread.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,55 +23,39 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderService {
     private final OrderRepository orderRepository;
-    private final CartService cartService;
-    private final UserService userService;
-
-    @Transactional()
-    public Order checkout(Long userId) {
-        User currentUser = userService.getUserById(userId);
-        Cart cart = cartService.getCartByUser(currentUser);
-
+    private BookService bookService;
+    @Transactional
+    public Order createOrder(User user, List<CartItem> cartItems, CheckoutRequest checkoutRequest) {
         Order order = new Order();
-        order.setUser(currentUser);
-        order.setStatus(OrderStatus.PROCESSING);
+        order.setUser(user);
+        order.setStatus(OrderStatus.PAID);
+        order.setShippingAddress(checkoutRequest.getShippingAddress());
+        order.setBillingAddress(checkoutRequest.getBillingAddress());
 
-        UserProfile userProfile = currentUser.getUserProfile();
-        if (userProfile != null) {
-            String shippingAddress = getFullAddress(userProfile);
-            order.setShippingAddress(shippingAddress);
-            order.setBillingAddress(shippingAddress);
-        } else {
-            throw new RuntimeException("User's information not found");
-        }
-
-        order.setTotalAmount(cartService.calculateCartTotal(cart));
-
-        List<OrderItem> orderItems = cart.getCartItems().stream()
+        List<OrderItem> orderItems = cartItems.stream()
                 .map(cartItem -> {
+                    Book book = cartItem.getBook();
+                    int quantity = cartItem.getQuantity();
+
+                    bookService.updateInventory(book.getId(), -quantity);
+
                     OrderItem orderItem = new OrderItem();
                     orderItem.setOrder(order);
-                    orderItem.setBook(cartItem.getBook());
-                    orderItem.setQuantity(cartItem.getQuantity());
-                    orderItem.setPrice(cartItem.getBook().getPrice());
+                    orderItem.setBook(book);
+                    orderItem.setQuantity(quantity);
+                    orderItem.setPrice(book.getPrice());
+
                     return orderItem;
                 })
                 .collect(Collectors.toList());
 
+        BigDecimal totalAmount = orderItems.stream()
+                .map(orderItem -> orderItem.getPrice().multiply(BigDecimal.valueOf(orderItem.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         order.setOrderItems(orderItems);
-        orderRepository.save(order);
+        order.setTotalAmount(totalAmount);
 
-        cartService.clearCart(userId);
-
-        return order;
-    }
-
-    private String getFullAddress(UserProfile userProfile) {
-        return userProfile.getId().toString();
-//                getAddress() + ", " ;
-//                +
-//                userProfile.getCity() + ", " +
-//                userProfile.getState() + " " +
-//                userProfile.getZipCode() + ", " +
-//                userProfile.getCountry();
+        return orderRepository.save(order);
     }
 }

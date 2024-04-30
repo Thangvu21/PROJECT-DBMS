@@ -15,6 +15,19 @@ export class SearchComponent {
 
   @ViewChild('searchInput', { static: true }) searchInput!: ElementRef;
 
+  categories: string[] = ['Category 1', 'Category 2', 'Category 3']; // Replace with your actual categories
+  isCategoryDropdownOpen: boolean = false;
+  selectedCategory: string = '';
+
+  toggleCategoryDropdown() {
+    this.isCategoryDropdownOpen = !this.isCategoryDropdownOpen;
+  }
+
+  selectCategory(category: string) {
+    this.selectedCategory = category;
+    this.isCategoryDropdownOpen = false;
+  }
+
   constructor(private router: Router,
               private productService: ProductService) {
   }

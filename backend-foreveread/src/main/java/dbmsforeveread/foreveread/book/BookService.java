@@ -1,9 +1,17 @@
 package dbmsforeveread.foreveread.book;
 
+import dbmsforeveread.foreveread.SyncData.BookSyncService;
 import dbmsforeveread.foreveread.author.Author;
 import dbmsforeveread.foreveread.author.AuthorDTO;
+import dbmsforeveread.foreveread.author.AuthorRepository;
+import dbmsforeveread.foreveread.bookCategory.BookAuthor;
+import dbmsforeveread.foreveread.bookCategory.BookAuthorRepository;
+import dbmsforeveread.foreveread.bookCategory.BookCategory;
+import dbmsforeveread.foreveread.bookCategory.BookCategoryRepository;
 import dbmsforeveread.foreveread.category.Category;
 import dbmsforeveread.foreveread.category.CategoryDTO;
+import dbmsforeveread.foreveread.category.CategoryRepository;
+import dbmsforeveread.foreveread.exceptions.InsufficientInventoryException;
 import dbmsforeveread.foreveread.exceptions.ResourceNotFoundException;
 import dbmsforeveread.foreveread.inventory.Inventory;
 import dbmsforeveread.foreveread.inventory.InventoryDTO;
@@ -31,7 +39,12 @@ public class BookService {
     private final BookRepository bookRepository;
     private final InventoryRepository inventoryRepository;
     private final PublisherRepository publisherRepository;
+    private final AuthorRepository authorRepository;
+    private final CategoryRepository categoryRepository;
     private final RecommendationService recommendationService;
+    private final BookSyncService bookSyncService;
+    private final BookAuthorRepository bookAuthorRepository;
+    private final BookCategoryRepository bookCategoryRepository;
     @Transactional(readOnly = true)
     public Book getBookById(Long bookId) {
         return bookRepository.findById(bookId)
@@ -44,16 +57,58 @@ public class BookService {
         return book.getPrice();
     }
 
-    @Transactional()
-    public Book createBook(Book book) {
-        return bookRepository.save(book);
+//    @Transactional
+//    public Book addBook(BookDTO bookDTO) {
+//        Book book = new Book();
+//        book.setTitle(bookDTO.getTitle());
+//        book.setIsbn(bookDTO.getIsbn());
+//
+//        Publisher publisher = publisherRepository.findById(bookDTO.getPublisherId())
+//                .orElseThrow(() -> new IllegalArgumentException("Publisher not found"));
+//        book.setPublisher(publisher);
+//
+//        book.setPublicationDate(bookDTO.getPublicationDate());
+//        book.setLanguage(bookDTO.getLanguage());
+//        book.setPages(bookDTO.getPages());
+//        book.setDescription(bookDTO.getDescription());
+//        book.setPrice(bookDTO.getPrice());
+//        book.setImageUrl(bookDTO.getImageUrl());
+//
+//        Book savedBook = bookRepository.save(book);
+//
+//        bookDTO.getAuthorIds().forEach(authorId -> {
+//            BookAuthor bookAuthor = new BookAuthor();
+//            bookAuthor.setBookId(savedBook.getId());
+//            bookAuthor.setAuthorId(authorId);
+//            bookAuthorRepository.save(bookAuthor);
+//        });
+//
+//        bookDTO.getCategoryIds().forEach(categoryId -> {
+//            BookCategory bookCategory = new BookCategory();
+//            bookCategory.setBookId(savedBook.getId());
+//            bookCategory.setCategoryId(categoryId);
+//            bookCategoryRepository.save(bookCategory);
+//        });
+//
+//        Inventory inventory = new Inventory();
+//        inventory.setBookId(savedBook.getId());
+//        inventory.setQuantity(bookDTO.getQuantity());
+//        inventoryRepository.save(inventory);
+//
+//        //publish a kafka event for adding
+//        bookSyncService.publishBookEvent(savedBook.getId(), "ADD");
+//        return savedBook;
+//    }
+    public void addBookEvent(BookDTO bookDTO){
+        bookSyncService.publishBookEvent(bookDTO, "ADD");
     }
 
-    @Transactional()
+    @Transactional
     public Book updateBook(Long id, Book book) {
         Book existingBook = getBookById(id);
         existingBook.setTitle(book.getTitle());
         existingBook.setIsbn(book.getIsbn());
+//        bookSyncService.publishBookEvent(book, "UPDATE");
         return bookRepository.save(existingBook);
     }
 
@@ -61,6 +116,7 @@ public class BookService {
     public void deleteBook(Long id) {
         Book book = getBookById(id);
         bookRepository.delete(book);
+//        bookSyncService.publishBookEvent(id, "DELETE");
     }
 
 //    public Page<BookSearchResultDTO> searchBooks(String query, int page, int size) {
@@ -191,4 +247,17 @@ public class BookService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void updateInventory(Long bookId, int quantityChange) {
+        Book book = getBookById(bookId);
+        Inventory inventory = book.getInventory();
+        int newQuantity = inventory.getQuantity() + quantityChange;
+
+        if (newQuantity < 0) {
+            throw new InsufficientInventoryException("Insufficient inventory for book: " + book.getTitle());
+        }
+
+        inventory.setQuantity(newQuantity);
+        inventoryRepository.save(inventory);
+    }
 }

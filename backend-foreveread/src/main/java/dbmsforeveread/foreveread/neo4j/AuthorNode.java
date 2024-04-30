@@ -16,5 +16,5 @@ public class AuthorNode {
     private String name;
 
     @Property("author_id")
-    private Long author_id;
+    private Long authorId;
 }

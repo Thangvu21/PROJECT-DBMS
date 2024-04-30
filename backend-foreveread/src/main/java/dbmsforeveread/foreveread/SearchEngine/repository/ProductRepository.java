@@ -24,7 +24,7 @@ import org.springframework.util.StringUtils;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 
 @Repository
-public class ProductRepository {
+public class ProductRepository{
 
     public static final String PRODUCTS = "products";
 

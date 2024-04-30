@@ -21,4 +21,7 @@ public interface BookRepository extends JpaRepository<Book, Long> {
             @Param("maxPrice") BigDecimal maxPrice,
             Pageable pageable
     );
+
+    public void deleteById(Long id);
+
 }

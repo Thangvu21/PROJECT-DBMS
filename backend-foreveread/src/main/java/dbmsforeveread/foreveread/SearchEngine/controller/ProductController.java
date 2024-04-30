@@ -136,17 +136,22 @@ public class ProductController {
     // Gợi ý chữ autocomplite
     @GetMapping("/autoSuggest/{partialProductName}")
     List<String> autoSuggestProductSearch(@PathVariable String partialProductName) throws IOException {
-        SearchResponse<Product> searchResponse = productService.autoSuggestProduct(partialProductName);
-        List<Hit<Product>> hitList  =  searchResponse.hits().hits();
-        List<Product> productList = new ArrayList<>();
-        for(Hit<Product> hit : hitList){
-            productList.add(hit.source());
+        try {
+            SearchResponse<Product> searchResponse = productService.autoSuggestProduct(partialProductName);
+            List<Hit<Product>> hitList = searchResponse.hits().hits();
+            List<Product> productList = new ArrayList<>();
+            for (Hit<Product> hit : hitList) {
+                productList.add(hit.source());
+            }
+            List<String> listOfProductNames = new ArrayList<>();
+            for (Product product : productList) {
+                listOfProductNames.add(product.getTitle());
+            }
+            return listOfProductNames;
+        }  catch (IOException e) {
+            log.error("Error while retrieving auto suggestions", e);
+            return (List<String>) ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        List<String> listOfProductNames = new ArrayList<>();
-        for(Product product : productList){
-            listOfProductNames.add(product.getTitle())  ;
-        }
-        return listOfProductNames;
     }
 
     // tìm theo tiêu chí tôi nghĩ cái này phụ hơn là cái search chính

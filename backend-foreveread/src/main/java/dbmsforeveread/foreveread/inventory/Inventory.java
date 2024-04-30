@@ -9,7 +9,7 @@ import lombok.Data;
 public class Inventory {
     @Id
     @Column(name = "book_id")
-    private Long book_id;
+    private Long bookId;
 
     @OneToOne
     @JoinColumn(name = "book_id")

@@ -9,7 +9,11 @@ import dbmsforeveread.foreveread.exceptions.BookNotFoundException;
 import dbmsforeveread.foreveread.exceptions.InsufficientInventoryException;
 import dbmsforeveread.foreveread.inventory.Inventory;
 import dbmsforeveread.foreveread.inventory.InventoryRepository;
+import dbmsforeveread.foreveread.order.CheckoutRequest;
+import dbmsforeveread.foreveread.order.Order;
+import dbmsforeveread.foreveread.order.OrderService;
 import dbmsforeveread.foreveread.user.User;
+import dbmsforeveread.foreveread.user.UserProfile;
 import dbmsforeveread.foreveread.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,11 +31,46 @@ public class CartService {
     private final InventoryRepository inventoryRepository;
     private final BookService bookService;
     private final UserRepository userRepository;
-
+    private final OrderService orderService;
     @Transactional(readOnly = true)
     public Cart getCartByUserId(Long userId) {
         return cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new BookNotFoundException("Cart not found for user: " + userId));
+    }
+
+    @Transactional
+    public Order checkout(Long userId) {
+        Cart cart = getCartByUserId(userId);
+        List<CartItem> cartItems = cart.getCartItems();
+
+        validateCartItems(cartItems);
+
+        User user = cart.getUser();
+        CheckoutRequest checkoutRequest = createCheckoutRequest(user);
+
+        Order order = orderService.createOrder(user, cartItems, checkoutRequest);
+        clearCart(userId);
+
+        return order;
+    }
+
+    private void validateCartItems(List<CartItem> cartItems) {
+        for (CartItem cartItem : cartItems) {
+            Book book = cartItem.getBook();
+            int quantity = cartItem.getQuantity();
+
+            if (book.getInventory().getQuantity() < quantity) {
+                throw new InsufficientInventoryException("Insufficient inventory for book: " + book.getTitle());
+            }
+        }
+    }
+
+    private CheckoutRequest createCheckoutRequest(User user) {
+        UserProfile userProfile = user.getUserProfile();
+        return CheckoutRequest.builder()
+                .shippingAddress(userProfile.getAddress())
+                .billingAddress(userProfile.getAddress())
+                .build();
     }
 
     public Cart getCartByUser(User user) {

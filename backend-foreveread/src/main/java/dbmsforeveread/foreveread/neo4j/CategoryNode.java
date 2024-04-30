@@ -17,7 +17,7 @@ public class CategoryNode {
     private Long id;
 
     @Property("category_id")
-    private Long category_id;
+    private Long categoryId;
 
     @Property("name")
     private String name;

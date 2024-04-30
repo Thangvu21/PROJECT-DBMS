@@ -10,4 +10,6 @@ import java.util.List;
 public interface ReviewDocumentRepository extends MongoRepository<ReviewDocument, String> {
     Page<ReviewDocument> findByBookId(Long bookId, Pageable pageable);
     List<ReviewDocument> findByBookId(Long bookId);
+
+    void deleteAllByBookId(Long bookId);
 }

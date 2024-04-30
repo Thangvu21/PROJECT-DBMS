@@ -19,7 +19,7 @@ public class BookNode {
     private String title;
 
     @Property("book_id")
-    private Long book_id;
+    private Long bookId;
 
     @Property("imageUrl")
     private String imageUrl;
